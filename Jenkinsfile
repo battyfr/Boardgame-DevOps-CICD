@@ -8,6 +8,12 @@ pipeline {
 
     stages {
 
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Compile') {
             steps {
                 sh 'mvn clean compile'
@@ -37,14 +43,27 @@ pipeline {
                 sh 'mvn clean package'
             }
         }
+
+        stage('Deploy to Nexus') {
+            steps {
+                configFileProvider([configFile(fileId: 'maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                    sh 'mvn deploy -s $MAVEN_SETTINGS'
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo 'Build Successful!'
+            echo ' Build, SonarQube Analysis and Nexus Deployment Successful!'
         }
+
         failure {
-            echo 'Build Failed!'
+            echo ' Pipeline Failed!'
+        }
+
+        always {
+            cleanWs()
         }
     }
 }

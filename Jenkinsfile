@@ -8,13 +8,6 @@ pipeline {
 
     stages {
 
-        stage('Check Java') {
-            steps {
-                sh 'java -version'
-                sh 'mvn -version'
-            }
-        }
-
         stage('Compile') {
             steps {
                 sh 'mvn compile'
@@ -24,6 +17,18 @@ pipeline {
         stage('Test') {
             steps {
                 sh 'mvn test'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    sh '''
+                    mvn sonar:sonar \
+                    -Dsonar.projectKey=Boardgame \
+                    -Dsonar.projectName=Boardgame
+                    '''
+                }
             }
         }
 

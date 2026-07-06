@@ -10,7 +10,7 @@ pipeline {
 
         stage('Compile') {
             steps {
-                sh 'mvn compile'
+                sh 'mvn clean compile'
             }
         }
 
@@ -24,9 +24,9 @@ pipeline {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
-                    mvn sonar:sonar \
-                    -Dsonar.projectKey=Boardgame \
-                    -Dsonar.projectName=Boardgame
+                        mvn sonar:sonar \
+                        -Dsonar.projectKey=Boardgame \
+                        -Dsonar.projectName=Boardgame
                     '''
                 }
             }
@@ -34,8 +34,17 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'mvn package'
+                sh 'mvn clean package'
             }
+        }
+    }
+
+    post {
+        success {
+            echo 'Build Successful!'
+        }
+        failure {
+            echo 'Build Failed!'
         }
     }
 }

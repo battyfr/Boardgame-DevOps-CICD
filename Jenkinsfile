@@ -11,7 +11,6 @@ pipeline {
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 checkout scm
@@ -79,10 +78,19 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh '''
+                kind load docker-image $IMAGE_NAME --name boardgame
+                kubectl apply -f k8s/
+                kubectl rollout restart deployment/boardgame
+                '''
+            }
+        }
     }
 
     post {
-
         success {
             echo '========================================='
             echo 'Pipeline Completed Successfully!'
@@ -93,13 +101,12 @@ pipeline {
             echo 'Nexus Deployment ✓'
             echo 'Docker Image Built ✓'
             echo 'Docker Hub Push ✓'
+            echo 'Kubernetes Deploy ✓'
             echo '========================================='
         }
-
         failure {
             echo 'Pipeline Failed!'
         }
-
         always {
             cleanWs()
         }

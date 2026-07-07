@@ -11,6 +11,7 @@ pipeline {
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -19,11 +20,11 @@ pipeline {
 
         stage('Compile') {
             steps {
-                sh 'mvn clean compile'
+                sh 'mvn compile'
             }
         }
 
-        stage('Test') {
+        stage('Run Tests') {
             steps {
                 sh 'mvn test'
             }
@@ -33,9 +34,9 @@ pipeline {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
-                    mvn sonar:sonar \
-                    -Dsonar.projectKey=Boardgame \
-                    -Dsonar.projectName=Boardgame
+                        mvn sonar:sonar \
+                        -Dsonar.projectKey=Boardgame \
+                        -Dsonar.projectName=Boardgame
                     '''
                 }
             }
@@ -49,7 +50,12 @@ pipeline {
 
         stage('Deploy to Nexus') {
             steps {
-                configFileProvider([configFile(fileId: 'maven-settings', variable: 'MAVEN_SETTINGS')]) {
+                configFileProvider([
+                    configFile(
+                        fileId: 'maven-settings',
+                        variable: 'MAVEN_SETTINGS'
+                    )
+                ]) {
                     sh 'mvn deploy -s $MAVEN_SETTINGS'
                 }
             }
@@ -57,7 +63,9 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE_NAME .'
+                sh '''
+                    docker build -t $IMAGE_NAME .
+                '''
             }
         }
 
@@ -71,9 +79,9 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                    echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-                    docker push $IMAGE_NAME
-                    docker logout
+                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+                        docker push $IMAGE_NAME
+                        docker logout
                     '''
                 }
             }
@@ -82,31 +90,40 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 sh '''
-                kind load docker-image $IMAGE_NAME --name boardgame
-                kubectl apply -f k8s/
-                kubectl rollout restart deployment/boardgame
+                    kind load docker-image $IMAGE_NAME --name boardgame
+                    kubectl apply -f k8s/
+                    kubectl rollout restart deployment/boardgame
+                    kubectl rollout status deployment/boardgame
                 '''
             }
         }
     }
 
     post {
+
         success {
             echo '========================================='
-            echo 'Pipeline Completed Successfully!'
-            echo 'GitHub ✓'
-            echo 'Maven Build ✓'
-            echo 'Tests Passed ✓'
-            echo 'SonarQube ✓'
-            echo 'Nexus Deployment ✓'
-            echo 'Docker Image Built ✓'
-            echo 'Docker Hub Push ✓'
-            echo 'Kubernetes Deploy ✓'
+            echo ' CI/CD Pipeline Completed Successfully!'
+            echo '========================================='
+            echo '✓ Source Code Checked Out'
+            echo '✓ Maven Compile Successful'
+            echo '✓ Unit Tests Passed'
+            echo '✓ SonarQube Analysis Completed'
+            echo '✓ JAR Package Created'
+            echo '✓ Artifact Uploaded to Nexus'
+            echo '✓ Docker Image Built'
+            echo '✓ Docker Image Pushed to Docker Hub'
+            echo '✓ Kubernetes Deployment Updated'
             echo '========================================='
         }
+
         failure {
-            echo 'Pipeline Failed!'
+            echo '========================================='
+            echo ' Pipeline Failed!'
+            echo 'Please check the failed stage above.'
+            echo '========================================='
         }
+
         always {
             cleanWs()
         }

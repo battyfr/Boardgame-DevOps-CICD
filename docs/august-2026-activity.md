@@ -267,3 +267,4 @@ Boardgame project update: August 21, commit 4
 Boardgame project update: August 21, commit 5
 Boardgame project update: August 21, commit 6
 Boardgame project update: August 21, commit 7
+Boardgame project update: August 21, commit 8

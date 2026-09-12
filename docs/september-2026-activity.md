@@ -380,3 +380,4 @@ Boardgame project update: September 12, commit 4
 Boardgame project update: September 12, commit 5
 Boardgame project update: September 12, commit 6
 Boardgame project update: September 12, commit 7
+Boardgame project update: September 12, commit 8

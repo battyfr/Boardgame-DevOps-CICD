@@ -37,3 +37,4 @@ Boardgame project update: October 05, commit 5
 Boardgame project update: October 05, commit 6
 Boardgame project update: October 05, commit 7
 Boardgame project update: October 06, commit 1
+Boardgame project update: October 06, commit 2

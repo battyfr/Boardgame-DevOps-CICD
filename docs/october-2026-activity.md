@@ -112,3 +112,4 @@ Boardgame project update: October 16, commit 8
 Boardgame project update: October 16, commit 9
 Boardgame project update: October 16, commit 10
 Boardgame project update: October 16, commit 11
+Boardgame project update: October 16, commit 12

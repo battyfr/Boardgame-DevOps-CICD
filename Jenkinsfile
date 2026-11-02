@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -8,6 +9,9 @@ pipeline {
 
     environment {
         IMAGE_NAME = "battyfr/boardgame:latest"
+        CLUSTER_NAME = "boardgame"
+        DEPLOYMENT_NAME = "boardgame-deployment"
+        MANIFEST_FILE = "deployment-service.yaml"
     }
 
     stages {
@@ -34,7 +38,7 @@ pipeline {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
-                        mvn sonar:sonar \
+                        mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.11.0.3922:sonar \
                         -Dsonar.projectKey=Boardgame \
                         -Dsonar.projectName=Boardgame
                     '''
@@ -56,7 +60,7 @@ pipeline {
                         variable: 'MAVEN_SETTINGS'
                     )
                 ]) {
-                    sh 'mvn deploy -s $MAVEN_SETTINGS'
+                    sh 'mvn deploy -s "$MAVEN_SETTINGS"'
                 }
             }
         }
@@ -79,8 +83,11 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+                        echo "$DOCKER_PASSWORD" | docker login \
+                        -u "$DOCKER_USERNAME" --password-stdin
+
                         docker push $IMAGE_NAME
+
                         docker logout
                     '''
                 }
@@ -90,30 +97,42 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 sh '''
-                    kind load docker-image $IMAGE_NAME --name boardgame
-                    kubectl apply -f k8s/
-                    kubectl rollout restart deployment/boardgame
-                    kubectl rollout status deployment/boardgame
+                    # Load image into Kind
+                    kind load docker-image $IMAGE_NAME --name $CLUSTER_NAME
+
+                    # Apply Kubernetes configuration
+                    kubectl apply -f $MANIFEST_FILE
+
+                    # Update deployment with the new image
+                    CONTAINER_NAME=$(kubectl get deployment $DEPLOYMENT_NAME \
+                    -o jsonpath='{.spec.template.spec.containers[0].name}')
+
+                    kubectl set image deployment/$DEPLOYMENT_NAME \
+                    $CONTAINER_NAME=$IMAGE_NAME
+
+                    # Restart and verify deployment
+                    kubectl rollout restart deployment/$DEPLOYMENT_NAME
+
+                    kubectl rollout status deployment/$DEPLOYMENT_NAME
                 '''
             }
         }
     }
 
     post {
-
         success {
             echo '========================================='
             echo ' CI/CD Pipeline Completed Successfully!'
             echo '========================================='
-            echo '✓ Source Code Checked Out'
-            echo '✓ Maven Compile Successful'
-            echo '✓ Unit Tests Passed'
-            echo '✓ SonarQube Analysis Completed'
-            echo '✓ JAR Package Created'
-            echo '✓ Artifact Uploaded to Nexus'
-            echo '✓ Docker Image Built'
-            echo '✓ Docker Image Pushed to Docker Hub'
-            echo '✓ Kubernetes Deployment Updated'
+            echo 'Source Code Checked Out'
+            echo 'Maven Compile Successful'
+            echo 'Unit Tests Passed'
+            echo 'SonarQube Analysis Completed'
+            echo 'JAR Package Created'
+            echo 'Artifact Uploaded to Nexus'
+            echo 'Docker Image Built'
+            echo 'Docker Image Pushed to Docker Hub'
+            echo 'Kubernetes Deployment Updated'
             echo '========================================='
         }
 
